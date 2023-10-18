@@ -5,6 +5,9 @@
 		},
 		{
 			"path": "../assas_database"
+		},
+		{
+			"path": "../notebooks"
 		}
 	],
 	"settings": {}
