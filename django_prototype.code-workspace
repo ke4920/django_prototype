@@ -2,6 +2,9 @@
 	"folders": [
 		{
 			"path": "."
+		},
+		{
+			"path": "../assas_database"
 		}
 	],
 	"settings": {}

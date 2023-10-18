@@ -10,8 +10,9 @@ from . import models
 from . import forms
 
 def data_view(request):    #pull data from third party rest api
-    response = requests.get('http://localhost:8080/api/v1/dataresources/')    #convert reponse data into json
-    dataresources = response.json()
+    #response = requests.get('http://localhost:8080/api/v1/dataresources/')    #convert reponse data into json
+    #dataresources = response.json()
+    dataresources = {}
     print(dataresources)    
     
     return render(request, "data_view.html", {'dataresources': dataresources})
@@ -22,8 +23,9 @@ def home(request):
     return render(request, 'home.html', { 'documents': documents })
 
 def about(request):    #pull data from third party rest api
-    response = requests.get('http://localhost:8080/api/v1/dataresources/')    #convert reponse data into json
-    dataresources = response.json()
+    #response = requests.get('http://localhost:8080/api/v1/dataresources/')    #convert reponse data into json
+    #dataresources = response.json()
+    dataresources = {}
     print(dataresources)    
     
     return render(request, "about.html", {'dataresources': dataresources})
