@@ -4,10 +4,13 @@
 			"path": "."
 		},
 		{
-			"path": "../assas_database"
+			"path": "../notebooks"
 		},
 		{
-			"path": "../notebooks"
+			"path": "../wrap_python"
+		},
+		{
+			"path": "../bootstrap-5.2.3-examples"
 		}
 	],
 	"settings": {}

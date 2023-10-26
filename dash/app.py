@@ -3,9 +3,9 @@ import pandas as pd
 import numpy as np
 from collections import OrderedDict
 
-from assasdb import DatabaseManager
+from assasdb import AssasDatabaseManager
 
-df = DatabaseManager().view()
+df = AssasDatabaseManager().view()
 df['index'] = range(1, len(df) + 1)
 df = df.drop("_id",axis=1)
 df = df.drop("path",axis=1)

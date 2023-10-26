@@ -9,7 +9,7 @@ import requests
 from . import models
 from . import forms
 
-from assasdb import DatabaseManager
+from assasdb import AssasDatabaseManager
 
 def data_view(request):    #pull data from third party rest api
     #response = requests.get('http://localhost:8080/api/v1/dataresources/')    #convert reponse data into json
@@ -37,7 +37,7 @@ def model_form_upload(request):
     if request.method == 'POST':
         
         # inserted call of DatabaseManager.upload()
-        DatabaseManager().upload()
+        AssasDatabaseManager().upload()
 
         form = forms.DocumentForm(request.POST, request.FILES)
         if form.is_valid():
