@@ -3,23 +3,6 @@
 {% load static %}
 
 {% block content %}
-<iframe id="encoder_iframe" height=600px width="1200px" src="http://127.0.0.1:8050"></iframe>
-<!--
-<div class="container mt-5">
-  <table class="table">
-      <thead>
-          <tr>
-              <th>id</th>
-          </tr>
-      </thead>
-      <tbody>
-          {% for dataresource in dataresources %}                    
-          <tr>
-              <td>{{ dataresource.id }}</td>
-          </tr>                    
-          {% endfor %}   
-      </tbody>
-  </table>
-</div> -->   
+<iframe id="encoder_iframe" height="800px" width="1200x" src="http://127.0.0.1:8050"></iframe>
 <p><a href="{% url 'home' %}">Return to home</a></p>
 {% endblock %}
