@@ -20,7 +20,7 @@ PAGE_SIZE = 1
 app.layout = dash_table.DataTable(
     data=df.to_dict('records'),
     columns=[{'id': c, 'name': c} for c in df.columns],
-    page_size=10
+    page_size=20
 )
 
 #@callback(

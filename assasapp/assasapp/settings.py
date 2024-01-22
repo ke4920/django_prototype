@@ -128,7 +128,8 @@ STATIC_ROOT = "/home/jonas/django_prototype/assasapp/assasfrontend/static/"
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
 MEDIA_URL = '/media/'
-MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
+# MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
+MEDIA_ROOT = os.path.join('/mnt/ASSAS/', 'media')
 
 LOGGING = {
     'version': 1,
