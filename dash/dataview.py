@@ -84,7 +84,7 @@ app.layout = html.Div([
         
         page_current=0,
         page_size=PAGE_SIZE,
-        page_action='custom',
+        page_action='none',
                 
         filter_action='custom',
         filter_query='',
@@ -105,7 +105,7 @@ app.layout = html.Div([
     dcc.Checklist(
         id='datatable-use-page-size',
         options=[
-            {'label': 'Change entries per page', 'value': 'True'}
+            {'label': 'Change number of entries per page', 'value': 'True'}
         ],
         value=['True']
     ),
@@ -115,7 +115,9 @@ app.layout = html.Div([
         type='number',
         min=1,
         max=PAGE_MAX_SIZE,
-        value=PAGE_SIZE
+        value=PAGE_SIZE,
+        placeholder=PAGE_SIZE,
+        style={'color': 'black'}
     ),
     html.Div('Select a page', id='pagination-contents'),                 
     #html.Div('Or set the page dynamically using the slider below'),
@@ -208,19 +210,32 @@ def update_page_size(use_page_size, page_size_value):
 
 @callback(
     Output('pagination-contents', 'children'),
-    [Input('pagination', 'active_page')])
-def change_page(page):
+    Input('pagination', 'active_page'),
+    Input('pagination', 'max_value'))
+def change_page(page, value):
     if page:
-        return f'Page selected: {page}'
-    return 'Select a page'
+        return f'Page selected: {page}/{value}'
+    return f'Page selected: 1/{value}'
 
 @callback(
     Output('datatable-paging-and-sorting', 'page_current'),
-    [Input('pagination', 'active_page')])
+    Input('pagination', 'active_page'))
 def change_page_table(page):
     if page:
-        return page-1
+        return (page-1)
     return 0
+
+@callback(
+    Output('pagination', 'max_value'),
+    Output('datatable-page-size', 'style'),
+    Input('datatable-use-page-size', 'value'),
+    Input('datatable-page-size', 'value'))
+def update_page_count(use_page_size, page_size_value):
+    if use_page_size:
+        logger.info("use page size %d %d", len(df), page_size_value)
+        return int(len(df) / page_size_value)+1,{'color': 'black'}
+    logger.info("not use page size %d %d", len(df), page_size_value)
+    return int(len(df) / PAGE_SIZE)+1,{'color': 'grey'}
 
 @callback(
     Output('download', 'data'),
