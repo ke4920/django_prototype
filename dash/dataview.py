@@ -4,6 +4,8 @@ from dash import Dash, dash_table, html, dcc, Input, Output, callback, State
 import pandas as pd
 import numpy as np
 from collections import OrderedDict
+import h5py
+import os
 
 import logging
 
@@ -41,33 +43,36 @@ PAGE_COUNT = ALL / PAGE_SIZE
 
 app.layout = html.Div([
     html.H2('ASSAS Database - ASTEC Dataset Index'),
-    dbc.Alert("This is a primary alert", color="primary"),
+    dbc.Alert("Search interface for the available ASTEC training datasets", color="primary", style={'textAlign': 'center'}),
+    html.Div([
     dbc.Pagination(
                 id='pagination', 
                 first_last=True,
                 previous_next=True,
                 max_value=PAGE_COUNT, 
                 fully_expanded=False,
-                size="lg"
-                ),
+                size="lg"                
+                )
+    ], style={'width': '100%','padding-left':'35%', 'padding-right':'25%'}),
     dash_table.DataTable(
         id='datatable-paging-and-sorting',
         columns=[
-        {'name': ['', 'Index'], 'id': 'index'},
-        {'name': ['File', 'Name'], 'id': 'file_name'},
-        {'name': ['File', 'Size'], 'id': 'file_size'},
-        {'name': ['File', 'Date'], 'id': 'file_date'},
-        {'name': ['File', 'User'], 'id': 'file_user'},
-        {'name': ['File', 'Download'], 'id': 'file_download'},
-        {'name': ['Common', 'Scenario'], 'id': 'common_scenario'},
-        {'name': ['Common', 'Description'], 'id': 'common_description'},
-        {'name': ['Common', 'Attribute 1'], 'id': 'common_attribute_1'},
-        {'name': ['Common', 'Attribute 2'], 'id': 'common_attribute_2'},
-        {'name': ['Common', 'Attribute 3'], 'id': 'common_attribute_3'},
-        {'name': ['Data', 'Variables'], 'id': 'data_variables'},
-        {'name': ['Data', 'Channels'], 'id': 'data_channels'},
-        {'name': ['Data', 'Meshes'], 'id': 'data_meshes'},
-        {'name': ['Data', 'Timesteps'], 'id': 'data_timesteps'},
+        {'name': ['', 'Index'], 'id': 'index', 'selectable': True},
+        {'name': ['File', 'Name'], 'id': 'file_name', 'selectable': True},
+        {'name': ['File', 'Size'], 'id': 'file_size', 'selectable': True},
+        {'name': ['File', 'Date'], 'id': 'file_date', 'selectable': True},
+        {'name': ['File', 'User'], 'id': 'file_user', 'selectable': True},
+        {'name': ['File', 'Download'], 'id': 'file_download', 'selectable': True},
+        {'name': ['File', 'Status'], 'id': 'file_status', 'selectable': True},
+        {'name': ['Common', 'Scenario'], 'id': 'common_scenario', 'selectable': True},
+        {'name': ['Common', 'Description'], 'id': 'common_description', 'selectable': True},
+        {'name': ['Common', 'Attribute 1'], 'id': 'common_attribute_1', 'selectable': True},
+        {'name': ['Common', 'Attribute 2'], 'id': 'common_attribute_2', 'selectable': True},
+        {'name': ['Common', 'Attribute 3'], 'id': 'common_attribute_3', 'selectable': True},
+        {'name': ['Data', 'Variables'], 'id': 'data_variables', 'selectable': True},
+        {'name': ['Data', 'Channels'], 'id': 'data_channels', 'selectable': True},
+        {'name': ['Data', 'Meshes'], 'id': 'data_meshes', 'selectable': True},
+        {'name': ['Data', 'Timesteps'], 'id': 'data_timesteps', 'selectable': True}
         ],
         data=df.to_dict('records'),
         style_cell = {'textAlign': 'center'},
@@ -75,12 +80,15 @@ app.layout = html.Div([
         
         style_header={
             'backgroundColor': 'rgb(30, 30, 30)',
-            'color': 'white'
+            'color': 'white',
+            'fontWeight': 'bold'
         },
         style_data={
             'backgroundColor': 'rgb(50, 50, 50)',
             'color': 'white'
         },
+        
+        row_selectable='multi',
         
         page_current=0,
         page_size=PAGE_SIZE,
@@ -94,6 +102,7 @@ app.layout = html.Div([
         sort_by=[],
         
         is_focused=True,
+        
         style_data_conditional=[
                 {'if': {'column_id': 'index'}, 'backgroundColor': 'green', 'text_align':'center','color': 'white'},
                 {'if': {'column_id': 'file_download'}, 'backgroundColor': 'yellow', 'color': 'red', 'font-weight': 'bold'},
@@ -105,9 +114,9 @@ app.layout = html.Div([
     dcc.Checklist(
         id='datatable-use-page-size',
         options=[
-            {'label': 'Change number of entries per page', 'value': 'True'}
+            {'label': ' Change entries per page', 'value': 'True'}
         ],
-        value=['True']
+        value=['False']
     ),
     'Entries per page: ',
     dcc.Input(
@@ -117,9 +126,9 @@ app.layout = html.Div([
         max=PAGE_MAX_SIZE,
         value=PAGE_SIZE,
         placeholder=PAGE_SIZE,
-        style={'color': 'black'}
+        style={'color': 'grey'}
     ),
-    html.Div('Select a page', id='pagination-contents'),                 
+    html.Div('Select a page', id='pagination-contents'),             
     #html.Div('Or set the page dynamically using the slider below'),
     #dcc.Slider(
     #    id='page-change',
@@ -204,8 +213,12 @@ def update_table(page_current, page_size, sort_by, filter):
     Input('datatable-use-page-size', 'value'),
     Input('datatable-page-size', 'value'))
 def update_page_size(use_page_size, page_size_value):
+    
+    print("update page size", use_page_size, page_size_value, len(use_page_size))
+    
     if len(use_page_size) == 0 or page_size_value is None:
         return PAGE_SIZE
+    
     return page_size_value
 
 @callback(
@@ -231,11 +244,30 @@ def change_page_table(page):
     Input('datatable-use-page-size', 'value'),
     Input('datatable-page-size', 'value'))
 def update_page_count(use_page_size, page_size_value):
-    if use_page_size:
-        logger.info("use page size %d %d", len(df), page_size_value)
-        return int(len(df) / page_size_value)+1,{'color': 'black'}
-    logger.info("not use page size %d %d", len(df), page_size_value)
-    return int(len(df) / PAGE_SIZE)+1,{'color': 'grey'}
+    
+    print("use page size", use_page_size, page_size_value, len(use_page_size))
+    
+    if len(use_page_size) > 1 and page_size_value is not None:                
+        return int(len(df) / page_size_value) + 1,{'color': 'black'}
+    
+    if page_size_value is None:
+        int(len(df) / PAGE_SIZE) + 1,{'color': 'grey'}      
+    
+    return int(len(df) / PAGE_SIZE) + 1,{'color': 'grey'}
+
+def generate_hdf5File():
+
+    path = os.getcwd()+"/dataset.h5"
+    
+    file = h5py.File(path,"w")
+    arr = np.random.randn(1000)
+    file.create_group('metadata')
+    file['metadata'].attrs['name'] = "lol"
+    
+    file.create_dataset("test", data=arr)
+    file.close()
+    
+    return path 
 
 @callback(
     Output('download', 'data'),
@@ -245,10 +277,10 @@ def cell_clicked(active_cell, data):
     if active_cell:
         row = active_cell['row']
         col = active_cell['column_id']
-
-        if col == 'index':  # or whatever column you want
-            selected = data[row][col]
-            return dict(content='Hello!', filename='hello.txt')
+        if col == 'file_download':
+            #selected = data[row][col]
+            path = generate_hdf5File()
+            return dcc.send_file(path)
         else:
             return dash.no_update
 
