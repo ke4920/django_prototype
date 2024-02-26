@@ -51,7 +51,7 @@ PAGE_MAX_SIZE = 100
 
 PAGE_COUNT = ALL / PAGE_SIZE
 
-dash.register_page(__name__)
+dash.register_page(__name__, path="/assas_data_view")
 
 layout = html.Div([
     html.H2('ASSAS Database - ASTEC Dataset Index'),
