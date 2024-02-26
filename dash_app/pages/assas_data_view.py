@@ -18,22 +18,32 @@ colors = {
     'text': '#7FDBFF'
 }
 
+operators = [['ge ', '>='],
+             ['le ', '<='],
+             ['lt ', '<'],
+             ['gt ', '>'],
+             ['ne ', '!='],
+             ['eq ', '='],
+             ['contains '],
+             ['datestartswith ']]
+
 def load_data():
     
     df = AssasDatabaseManager().view()
-    df['index'] = range(1, len(df) + 1)
-    df = df.drop('_id',axis=1)
-    df = df.drop('file_path',axis=1)
-    df = df.drop('uuid',axis=1)
-    #df = df.drop('common_description',axis=1)
+    
+    df['system_index'] = range(1, len(df) + 1)
+    
+    df['_id'] = df['_id'].astype(str)
+    
+    df = df.drop('system_uuid',axis=1)
+    df = df.drop('system_path',axis=1)
     
     logger.info(df, type(df))
+    print(df)
     
     return df
     
 df = load_data()
-
-app = Dash(__name__, external_stylesheets=[dbc.themes.BOOTSTRAP], use_pages=True)
 
 ALL = len(df)
 PAGE_SIZE = 30
@@ -41,7 +51,9 @@ PAGE_MAX_SIZE = 100
 
 PAGE_COUNT = ALL / PAGE_SIZE
 
-app.layout = html.Div([
+dash.register_page(__name__)
+
+layout = html.Div([
     html.H2('ASSAS Database - ASTEC Dataset Index'),
     dbc.Alert("Search interface for the available ASTEC training datasets", color="primary", style={'textAlign': 'center'}),
     html.Div([
@@ -57,23 +69,16 @@ app.layout = html.Div([
     dash_table.DataTable(
         id='datatable-paging-and-sorting',
         columns=[
-        {'name': ['', 'Index'], 'id': 'index', 'selectable': True},
-        {'name': ['File', 'Name'], 'id': 'file_name', 'selectable': True},
-        {'name': ['File', 'Size'], 'id': 'file_size', 'selectable': True},
-        {'name': ['File', 'Date'], 'id': 'file_date', 'selectable': True},
-        {'name': ['File', 'User'], 'id': 'file_user', 'selectable': True},
-        {'name': ['File', 'Download'], 'id': 'file_download', 'selectable': True},
-        {'name': ['File', 'Status'], 'id': 'file_status', 'selectable': True},
-        {'name': ['Common', 'Scenario'], 'id': 'common_scenario', 'selectable': True},
-        {'name': ['Common', 'Description'], 'id': 'common_description', 'selectable': True},
-        {'name': ['Common', 'Attribute 1'], 'id': 'common_attribute_1', 'selectable': True},
-        {'name': ['Common', 'Attribute 2'], 'id': 'common_attribute_2', 'selectable': True},
-        {'name': ['Common', 'Attribute 3'], 'id': 'common_attribute_3', 'selectable': True},
-        {'name': ['Data', 'Variables'], 'id': 'data_variables', 'selectable': True},
-        {'name': ['Data', 'Channels'], 'id': 'data_channels', 'selectable': True},
-        {'name': ['Data', 'Meshes'], 'id': 'data_meshes', 'selectable': True},
-        {'name': ['Data', 'Timesteps'], 'id': 'data_timesteps', 'selectable': True}
+        {'name': '_id', 'id': '_id', 'hideable': True},
+        {'name': 'Index', 'id': 'system_index', 'selectable': True},
+        {'name': 'Size', 'id': 'system_size', 'selectable': True},
+        {'name': 'Date', 'id': 'system_date', 'selectable': True},
+        {'name': 'User', 'id': 'system_user', 'selectable': True},
+        {'name': 'Download', 'id': 'system_download', 'selectable': True},
+        {'name': 'Status', 'id': 'system_status', 'selectable': True},
+        {'name': 'Name', 'id': 'meta_name', 'selectable': True},
         ],
+        hidden_columns=['', '_id'],
         data=df.to_dict('records'),
         style_cell = {'textAlign': 'center'},
         merge_duplicate_headers= True,        
@@ -104,8 +109,9 @@ app.layout = html.Div([
         is_focused=True,
         
         style_data_conditional=[
-                {'if': {'column_id': 'index'}, 'backgroundColor': 'green', 'text_align':'center','color': 'white'},
-                {'if': {'column_id': 'file_download'}, 'backgroundColor': 'yellow', 'color': 'red', 'font-weight': 'bold'},
+                {'if': {'column_id': 'system_index'}, 'backgroundColor': 'green', 'text_align':'center','color': 'white'},
+                {'if': {'column_id': 'system_download'}, 'backgroundColor': 'yellow', 'color': 'red', 'font-weight': 'bold'},
+                {'if': {'column_id': 'meta_name'}, 'backgroundColor': 'yellow', 'color': 'blue', 'font-weight': 'bold'}
         ],        
     ),
     dcc.Location(id='location'),
@@ -137,23 +143,8 @@ app.layout = html.Div([
     #    step=1,
     #    value=1,
     #    marks={i: str(i) for i in range(1, 11)},
-    #),
-    html.Div([
-        html.Div(
-            dcc.Link(f"{page['name']} - {page['path']}", href=page["relative_path"])
-        ) for page in dash.page_registry.values()
-    ]),
-    dash.page_container
+    #),   
 ])
-
-operators = [['ge ', '>='],
-             ['le ', '<='],
-             ['lt ', '<'],
-             ['gt ', '>'],
-             ['ne ', '!='],
-             ['eq ', '='],
-             ['contains '],
-             ['datestartswith ']]
 
 def split_filter_part(filter_part):
     for operator_type in operators:
@@ -283,12 +274,27 @@ def cell_clicked(active_cell, data):
     if active_cell:
         row = active_cell['row']
         col = active_cell['column_id']
-        if col == 'file_download':
+        if col == 'system_download':
             #selected = data[row][col]
             path = generate_hdf5File()
             return dcc.send_file(path)
         else:
             return dash.no_update
-
-if __name__ == '__main__':
-    app.run(debug=True)
+        
+@callback(
+    Output('location', 'href'),
+    Input('datatable-paging-and-sorting', 'active_cell'),
+    State('datatable-paging-and-sorting', 'derived_viewport_data'))
+def cell_clicked_details(active_cell, data):
+    if active_cell:
+        
+        row = active_cell['row']
+        row_data = data[row]
+        col = active_cell['column_id']
+        
+        if col == 'meta_name':
+            print(str(active_cell), row_data['_id'], row_data['system_index'])
+            url = '/details/' + str(row_data['_id'])
+            return url
+        else:
+            return dash.no_update
