@@ -1,1 +1,0 @@
-curl 'http://localhost:8080/api/v1/dataresources/478c6e2b-0929-4bf2-81c5-6824325c52ca' -i -X GET
