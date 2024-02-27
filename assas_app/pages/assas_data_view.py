@@ -10,7 +10,7 @@ from dash import Dash, dash_table, html, dcc, Input, Output, callback, State
 from assasdb import AssasDatabaseManager
 from components import content_style
 
-logger = logging.getLogger(__name__)
+logger = logging.getLogger('assas_app')
 
 colors = {
     'background': '#111111',
@@ -28,18 +28,10 @@ operators = [['ge ', '>='],
 
 def load_data():
     
-    df = AssasDatabaseManager().view()
-    
-    df['system_index'] = range(1, len(df) + 1)
-    
-    df['_id'] = df['_id'].astype(str)
-    
-    df = df.drop('system_uuid',axis=1)
-    df = df.drop('system_path',axis=1)
-    
-    logger.info(df, type(df))
-    print(df)
-    
+    df = AssasDatabaseManager().view()    
+    df['system_index'] = range(1, len(df) + 1)    
+    df['_id'] = df['_id'].astype(str)    
+   
     return df
     
 df = load_data()
@@ -69,6 +61,8 @@ layout = html.Div([
         id='datatable-paging-and-sorting',
         columns=[
         {'name': '_id', 'id': '_id', 'hideable': True},
+        {'name': 'uuid', 'id': 'system_uuid', 'hideable': True},
+        {'name': 'Path', 'id': 'system_path', 'hideable': True},
         {'name': 'Index', 'id': 'system_index', 'selectable': True},
         {'name': 'Size', 'id': 'system_size', 'selectable': True},
         {'name': 'Date', 'id': 'system_date', 'selectable': True},
@@ -77,7 +71,7 @@ layout = html.Div([
         {'name': 'Status', 'id': 'system_status', 'selectable': True},
         {'name': 'Name', 'id': 'meta_name', 'selectable': True},
         ],
-        hidden_columns=['', '_id'],
+        hidden_columns=['', '_id', 'system_uuid', 'system_path'],
         data=df.to_dict('records'),
         style_cell = {'textAlign': 'center'},
         merge_duplicate_headers= True,        
@@ -109,7 +103,7 @@ layout = html.Div([
         
         style_data_conditional=[
                 {'if': {'column_id': 'system_index'}, 'backgroundColor': 'green', 'text_align':'center','color': 'white'},
-                {'if': {'column_id': 'system_download'}, 'backgroundColor': 'yellow', 'color': 'red', 'font-weight': 'bold'},
+                {'if': {'column_id': 'system_download'}, 'backgroundColor': 'blue', 'color': 'white', 'font-weight': 'bold'},
                 {'if': {'column_id': 'meta_name'}, 'backgroundColor': 'yellow', 'color': 'blue', 'font-weight': 'bold'}
         ],        
     ),
@@ -144,6 +138,26 @@ layout = html.Div([
     #    marks={i: str(i) for i in range(1, 11)},
     #),   
 ],style=content_style())
+
+@callback(
+    Output("datatable-paging-and-sorting", "style_data_conditional"),
+    Input("datatable-paging-and-sorting", "derived_viewport_selected_rows"),
+    Input("datatable-paging-and-sorting", "derived_viewport_selected_row_ids"),
+)
+def style_selected_rows(selected_rows, selected_row_ids):
+    
+    logger.info('%s %s ' % (selected_rows, selected_row_ids))
+    
+    if selected_rows is None:                                                                                                                                                                                                                      
+        return dash.no_update
+    val = [
+        {"if": {"filter_query": "{{id}} ={}".format(i)}, "backgroundColor": "green",}
+        for i in selected_rows        
+    ]   
+    val2 = [{'if': {'column_id': 'system_index'}, 'backgroundColor': 'green', 'text_align':'center','color': 'white'},
+        {'if': {'column_id': 'system_download'}, 'backgroundColor': 'blue', 'color': 'white', 'font-weight': 'bold'},
+        {'if': {'column_id': 'meta_name'}, 'backgroundColor': 'yellow', 'color': 'blue', 'font-weight': 'bold'}]
+    return val + val2
 
 def split_filter_part(filter_part):
     for operator_type in operators:
@@ -251,32 +265,21 @@ def update_page_count(use_page_size, page_size_value):
     
     return int(len(df) / PAGE_SIZE) + 1,{'color': 'grey'}
 
-def generate_hdf5File():
-
-    path = os.getcwd()+"/dataset.h5"
-    
-    file = h5py.File(path,"w")
-    arr = np.random.randn(1000)
-    file.create_group('metadata')
-    file['metadata'].attrs['name'] = "lol"
-    
-    file.create_dataset("test", data=arr)
-    file.close()
-    
-    return path 
-
 @callback(
     Output('download', 'data'),
     Input('datatable-paging-and-sorting', 'active_cell'),
     State('datatable-paging-and-sorting', 'derived_viewport_data'))
-def cell_clicked(active_cell, data):
+def cell_clicked_download(active_cell, data):
+    
     if active_cell:
+        
         row = active_cell['row']
+        row_data = data[row]
         col = active_cell['column_id']
+        
         if col == 'system_download':
-            #selected = data[row][col]
-            path = generate_hdf5File()
-            return dcc.send_file(path)
+            logger.info('start download for %s' % row_data['system_path'])
+            return dcc.send_file(row_data['system_path']+'/dataset.h5')
         else:
             return dash.no_update
         
@@ -285,6 +288,7 @@ def cell_clicked(active_cell, data):
     Input('datatable-paging-and-sorting', 'active_cell'),
     State('datatable-paging-and-sorting', 'derived_viewport_data'))
 def cell_clicked_details(active_cell, data):
+    
     if active_cell:
         
         row = active_cell['row']

@@ -1,16 +1,25 @@
 import dash
 import dash_bootstrap_components as dbc
+import logging
 
 from dash import dcc, html, Dash
 from flask import Flask
 from components import encode_svg_image
+from logging.handlers import RotatingFileHandler
+
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger('assas_app')
+handler = RotatingFileHandler('assas_app.log', maxBytes=10000, backupCount=1)
+logger.addHandler(handler)
 
 server = Flask(__name__)
+
+logger.info("start application")
 
 app = Dash(__name__,
            server = server,
            assets_folder='/assets',
-           external_stylesheets=[dbc.themes.BOOTSTRAP], 
+           external_stylesheets=[dbc.themes.BOOTSTRAP],
            use_pages=True, 
            suppress_callback_exceptions=True)
 
@@ -59,5 +68,8 @@ app.layout = html.Div(
                     dash.page_container
                 ])
 
+logger.info("started application")
+
 if __name__ == '__main__':
+    app.server.logger.addHandler(handler)
     app.run(debug=True)

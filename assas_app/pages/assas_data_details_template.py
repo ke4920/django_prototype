@@ -15,6 +15,8 @@ def meta_info_table(document):
     
     general_body = [html.Tbody([html.Tr([html.Td("Name"), html.Td(document["meta_name"])]),
                                 html.Tr([html.Td("Group"), html.Td(document["meta_group"])]),
+                                html.Tr([html.Td("Date"), html.Td(document["meta_date"])]),
+                                html.Tr([html.Td("Creator"), html.Td(document["meta_creator"])]),
                                 html.Tr([html.Td("Description"), html.Td(document["meta_description"])])
                             ])]
     
@@ -48,4 +50,4 @@ def layout(report_id=None):
     
         return html.Div([    
             meta_info_table(document)            
-        ])
+        ],style=content_style())
