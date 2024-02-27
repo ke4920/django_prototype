@@ -1,12 +1,28 @@
 import dash
 import dash_bootstrap_components as dbc
-from dash import Input, Output, dcc, html, Dash
+import os
 
-PLOTLY_LOGO = "https://images.plot.ly/logo/new-branding/plotly-logomark.png"
+from dash import Input, Output, dcc, html, Dash
+from flask import Flask
+from components import encode_svg_image
+#PLOTLY_LOGO = dash.get_asset_url('assas_logo.svg')
+#import base64
+#encoded = base64.b64encode(open(PLOTLY_LOGO,'rb').read()) 
+#svg = 'data:image/svg+xml;base64,{}'.format(encoded.decode()) 
 
 CONTENT_STYLE = {
     "color": "white",
 }
+
+#my_img()
+server = Flask(__name__)
+
+app = Dash(__name__,
+           server = server,
+           assets_folder='/assets',
+           external_stylesheets=[dbc.themes.BOOTSTRAP], 
+           use_pages=True, 
+           suppress_callback_exceptions=True)
 
 navbar = dbc.Navbar(
     dbc.Container(
@@ -15,7 +31,7 @@ navbar = dbc.Navbar(
                 # Use row and col to control vertical alignment of logo / brand
                 dbc.Row(
                     [                        
-                        dbc.Col(html.Img(src=PLOTLY_LOGO, height="30px")),
+                        dbc.Col(html.Img(src=encode_svg_image('assas_logo.svg'), height='30px')),
                         dbc.Col(dbc.NavbarBrand("ASSAS Data Hub", className="ms-2")),                                           
                     ],
                     align="center",
@@ -41,11 +57,6 @@ navbar = dbc.Navbar(
     dark=True,
     
 )
-
-app = Dash(__name__, 
-           external_stylesheets=[dbc.themes.BOOTSTRAP], 
-           use_pages=True, 
-           suppress_callback_exceptions=True)
 
 app.layout = html.Div([
                         navbar,  

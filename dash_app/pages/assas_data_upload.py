@@ -22,14 +22,10 @@ if not os.path.exists(UPLOAD_DIRECTORY):
     os.makedirs(UPLOAD_DIRECTORY)
 
 server = Flask(__name__)
-app = Dash(server=server, external_stylesheets=[dbc.themes.BOOTSTRAP])
+#app = Dash(server=server, external_stylesheets=[dbc.themes.BOOTSTRAP])
+dash.register_page(__name__, path="/assas_data_upload")
 
-@server.route("/download/<path:path>")
-def download(path):
-    """Serve a file from the upload directory."""
-    return send_from_directory(UPLOAD_DIRECTORY, path, as_attachment=True)
-
-app.layout = html.Div([
+layout = html.Div([
     html.H2('ASSAS Database - Upload ASTEC Dataset'),
     dbc.Alert("Upload interface for ASTEC training datasets", color="primary", style={'textAlign': 'center'}),
     dbc.InputGroup(
@@ -103,6 +99,11 @@ app.layout = html.Div([
     html.Ul(id="file-list")
 ])
 
+@server.route("/download/<path:path>")
+def download(path):
+    """Serve a file from the upload directory."""
+    return send_from_directory(UPLOAD_DIRECTORY, path, as_attachment=True)
+
 def file_download_link(filename):
     """Create a Plotly Dash 'A' element that downloads a file from the app."""
     location = "/download/{}".format(urlquote(filename))
@@ -117,7 +118,7 @@ def uploaded_files():
             files.append(filename)
     return files
 
-@app.callback(
+@callback(
     Output("file-list", "children"),
     [Input("upload-data", "filename"), Input("upload-data", "contents")],
 )
@@ -140,6 +141,3 @@ def save_file(name, content):
     data = content.encode("utf8").split(b";base64,")[1]
     with open(os.path.join(UPLOAD_DIRECTORY, name), "wb") as fp:
         fp.write(base64.decodebytes(data))
-
-if __name__ == '__main__':
-    app.run(debug=True, port=8052)
