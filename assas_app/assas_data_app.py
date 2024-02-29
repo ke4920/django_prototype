@@ -9,7 +9,7 @@ from logging.handlers import RotatingFileHandler
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger('assas_app')
-handler = RotatingFileHandler('assas_app.log', maxBytes=10000, backupCount=1)
+handler = RotatingFileHandler('assas_app.log', maxBytes=10000, backupCount=10)
 logger.addHandler(handler)
 
 server = Flask(__name__)
@@ -29,9 +29,10 @@ navbar = dbc.Navbar(
             html.A(
                 # Use row and col to control vertical alignment of logo / brand
                 dbc.Row(
-                    [                        
-                        dbc.Col(html.Img(src=encode_svg_image('assas_logo.svg'), height='30px')),
-                        dbc.Col(dbc.NavbarBrand("ASSAS Data Hub", className="ms-2")),                                           
+                    [                     
+                        dbc.Col(html.Img(src=encode_svg_image('kit_logo.drawio.svg'), height='60px', width='120px'), width=6),
+                        dbc.Col(html.Img(src=encode_svg_image('assas_logo.svg'), height='60px', width='60px'), width=3),
+                        dbc.Col(dbc.NavbarBrand("ASSAS Data Hub", className="ms-2"), width=3),                                           
                     ],
                     align="center",
                     className="g-0",

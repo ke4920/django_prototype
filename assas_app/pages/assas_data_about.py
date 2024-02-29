@@ -1,13 +1,16 @@
 import dash
 
 from dash import html
-from components import content_style
+from components import content_style, encode_svg_image
 
 dash.register_page(__name__, path='/assas_data_about')
 
 layout = html.Div([
-    html.H1('This is our About page'),
-    html.Div('This is our About page content.'),
+    html.H1('About this Project'),
+    html.H4('System Overview'),
+    html.Img(src=encode_svg_image('assas_data_hub_system.drawio.svg'), height='600px', width='900px'),
+    html.H4('Data Flow'),
+    html.Img(src=encode_svg_image('assas_data_flow.drawio.svg'), height='600px', width='900px'),
     ],
     style = content_style()
 )

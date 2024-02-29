@@ -18,8 +18,15 @@ def content_style():
                 "margin-left": "1rem",
                 "margin-right": "1rem",
                 "padding": "2rem 1rem",
-                "border":"6px grey solid",
+                "border":"3px grey solid",
             }
-    
+
+def conditional_table_style(): 
+
+    return [
+                {'if': {'column_id': 'system_index'}, 'backgroundColor': 'green', 'text_align':'center', 'color':'white'},
+                {'if': {'column_id': 'system_download'}, 'backgroundColor': 'grey', 'textAlign':'center', 'textDecoration': 'underline', "cursor": "pointer", 'color': 'blue'},
+                {'if': {'column_id': 'meta_name'}, 'backgroundColor': 'grey', 'color': 'blue', 'textAlign': 'center', 'textDecoration': 'underline', "cursor": "pointer", 'color': 'blue'}
+        ]
     
 

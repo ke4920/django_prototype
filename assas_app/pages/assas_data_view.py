@@ -8,7 +8,7 @@ import logging
 
 from dash import Dash, dash_table, html, dcc, Input, Output, callback, State
 from assasdb import AssasDatabaseManager
-from components import content_style
+from components import content_style, conditional_table_style
 
 logger = logging.getLogger('assas_app')
 
@@ -45,8 +45,9 @@ PAGE_COUNT = ALL / PAGE_SIZE
 dash.register_page(__name__, path="/assas_data_view")
 
 layout = html.Div([
-    html.H2('ASSAS Database - ASTEC Dataset Index'),
-    dbc.Alert("Search interface for the available ASTEC training datasets", color="primary", style={'textAlign': 'center'}),
+    html.H2('ASSAS Database - Training Dataset Index'),
+    dbc.Alert("Search interface for the available ASSAS training datasets", color="primary", style={'textAlign': 'center'}),
+    html.Hr(),
     html.Div([
     dbc.Pagination(
                 id='pagination', 
@@ -56,7 +57,18 @@ layout = html.Div([
                 fully_expanded=False,
                 size="lg"                
                 )
-    ], style={'width': '100%','padding-left':'35%', 'padding-right':'25%'}),
+    ], style={'width': '100%','padding-left':'30%', 'padding-right':'25%'}),
+    html.Hr(),
+    html.Div([
+    dbc.Button(
+            "Download", 
+            id="download_selected", 
+            className="me-2", 
+            n_clicks=0, 
+            disabled=True,
+        ),
+    ], style={'width': '100%','padding-left':'10%', 'padding-right':'25%'}),
+    html.Hr(),
     dash_table.DataTable(
         id='datatable-paging-and-sorting',
         columns=[
@@ -67,13 +79,18 @@ layout = html.Div([
         {'name': 'Size', 'id': 'system_size', 'selectable': True},
         {'name': 'Date', 'id': 'system_date', 'selectable': True},
         {'name': 'User', 'id': 'system_user', 'selectable': True},
-        {'name': 'Download', 'id': 'system_download', 'selectable': True},
+        {'name': 'File', 'id': 'system_download', 'selectable': True},
         {'name': 'Status', 'id': 'system_status', 'selectable': True},
         {'name': 'Name', 'id': 'meta_name', 'selectable': True},
         ],
+        markdown_options={"html": True},
         hidden_columns=['', '_id', 'system_uuid', 'system_path'],
         data=df.to_dict('records'),
-        style_cell = {'textAlign': 'center'},
+        style_cell={
+            'fontSize': 17,
+            'padding': '2px',
+            'textAlign': 'center'
+        },
         merge_duplicate_headers= True,        
         
         style_header={
@@ -101,12 +118,9 @@ layout = html.Div([
         
         is_focused=True,
         
-        style_data_conditional=[
-                {'if': {'column_id': 'system_index'}, 'backgroundColor': 'green', 'text_align':'center','color': 'white'},
-                {'if': {'column_id': 'system_download'}, 'backgroundColor': 'blue', 'color': 'white', 'font-weight': 'bold'},
-                {'if': {'column_id': 'meta_name'}, 'backgroundColor': 'yellow', 'color': 'blue', 'font-weight': 'bold'}
-        ],        
+        style_data_conditional=conditional_table_style(),        
     ),
+    html.Hr(),
     dcc.Location(id='location'),
     dcc.Download(id='download'),
     html.Br(),
@@ -140,23 +154,37 @@ layout = html.Div([
 ],style=content_style())
 
 @callback(
+    Output("download_selected", "disabled"),     
+    Input("datatable-paging-and-sorting", "derived_viewport_selected_rows"),
+    Input("datatable-paging-and-sorting", "derived_viewport_selected_row_ids")
+)
+def selected_button(rows, ids):
+    
+    if (rows is None) or (ids is None):                                                                                                                                                                                                                      
+        return dash.no_update
+        
+    if len(rows) > 0:
+        return False
+    
+    return True
+
+@callback(
     Output("datatable-paging-and-sorting", "style_data_conditional"),
     Input("datatable-paging-and-sorting", "derived_viewport_selected_rows"),
     Input("datatable-paging-and-sorting", "derived_viewport_selected_row_ids"),
 )
 def style_selected_rows(selected_rows, selected_row_ids):
     
-    logger.info('%s %s ' % (selected_rows, selected_row_ids))
-    
     if selected_rows is None:                                                                                                                                                                                                                      
         return dash.no_update
+    
+    logger.info('%s %s ' % (selected_rows, selected_row_ids))
+    
     val = [
         {"if": {"filter_query": "{{id}} ={}".format(i)}, "backgroundColor": "green",}
         for i in selected_rows        
     ]   
-    val2 = [{'if': {'column_id': 'system_index'}, 'backgroundColor': 'green', 'text_align':'center','color': 'white'},
-        {'if': {'column_id': 'system_download'}, 'backgroundColor': 'blue', 'color': 'white', 'font-weight': 'bold'},
-        {'if': {'column_id': 'meta_name'}, 'backgroundColor': 'yellow', 'color': 'blue', 'font-weight': 'bold'}]
+    val2 = conditional_table_style()
     return val + val2
 
 def split_filter_part(filter_part):
@@ -224,7 +252,7 @@ def update_table(page_current, page_size, sort_by, filter):
     Input('datatable-page-size', 'value'))
 def update_page_size(use_page_size, page_size_value):
     
-    print("update page size", use_page_size, page_size_value, len(use_page_size))
+    #logger.info("update page size", use_page_size, page_size_value, len(use_page_size))
     
     if len(use_page_size) == 0 or page_size_value is None:
         return PAGE_SIZE
@@ -255,7 +283,7 @@ def change_page_table(page):
     Input('datatable-page-size', 'value'))
 def update_page_count(use_page_size, page_size_value):
     
-    print("use page size", use_page_size, page_size_value, len(use_page_size))
+    #logger.info("use page size", use_page_size, page_size_value, len(use_page_size))
     
     if len(use_page_size) > 1 and page_size_value is not None:                
         return int(len(df) / page_size_value) + 1,{'color': 'black'}
@@ -296,7 +324,7 @@ def cell_clicked_details(active_cell, data):
         col = active_cell['column_id']
         
         if col == 'meta_name':
-            print(str(active_cell), row_data['_id'], row_data['system_index'])
+            logger.info(str(active_cell), row_data['_id'], row_data['system_index'])
             url = '/details/' + str(row_data['_id'])
             return url
         else:

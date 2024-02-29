@@ -25,56 +25,46 @@ server = Flask(__name__)
 dash.register_page(__name__, path="/assas_data_upload")
 
 layout = html.Div([
-    html.H2('ASSAS Database - Upload ASTEC Dataset'),
-    dbc.Alert("Upload interface for ASTEC training datasets", color="primary", style={'textAlign': 'center'}),
+    html.H2('ASSAS Database - Upload ASSAS Training Dataset'),
+    dbc.Alert("Upload interface for ASTEC binary archives", color="primary", style={'textAlign': 'center'}),
+    html.H3('General meta data'),
     dbc.InputGroup(
-            [dbc.InputGroupText("@"), dbc.Input(placeholder="Username")],
+            [dbc.InputGroupText("Name"), dbc.Input(placeholder="Name")],
             className="mb-3",
     ),
     dbc.InputGroup(
-            [
-                dbc.Input(placeholder="Recipient's username"),
-                dbc.InputGroupText("@example.com"),
-            ],
+            [dbc.InputGroupText("Group"), dbc.Input(placeholder="Group")],
             className="mb-3",
     ),
     dbc.InputGroup(
-            [
-                dbc.InputGroupText("$"),
-                dbc.Input(placeholder="Amount", type="number"),
-                dbc.InputGroupText(".00"),
-            ],
+            [dbc.InputGroupText("Date"), dbc.Input(placeholder="Date")],
             className="mb-3",
     ),
     dbc.InputGroup(
-            [
-                dbc.InputGroupText("Total:"),
-                dbc.InputGroupText("$"),
-                dbc.Input(placeholder="Amount", type="number"),
-                dbc.InputGroupText(".00"),
-                dbc.InputGroupText("only"),
-            ],
+            [dbc.InputGroupText("Creator"), dbc.Input(placeholder="Creator")],
             className="mb-3",
-    ),
+    ),  
     dbc.InputGroup(
             [
-                dbc.InputGroupText("With textarea"),
+                dbc.InputGroupText("Description"),
                 dbc.Textarea(),
             ],
             className="mb-3",
     ),
+    html.H3('Conversion schema'),
     dbc.InputGroup(
             [
+                dbc.InputGroupText("Schema"),
                 dbc.Select(
                     options=[
                         {"label": "Option 1", "value": 1},
                         {"label": "Option 2", "value": 2},
                     ]
-                ),
-                dbc.InputGroupText("With select"),
+                )                
             ]
     ),
     html.Hr(),
+    html.H3('Archive files'),
     dcc.Upload(
             id="upload-data",
             children=html.Div(
@@ -91,10 +81,18 @@ layout = html.Div([
                 "margin": "10px",
             }),
     html.Hr(),
+    dbc.Button(
+            "Upload", 
+            id="upload_archive", 
+            className="me-2", 
+            n_clicks=0, 
+            disabled=True,
+        ),
+    html.Hr(),
     dcc.Interval(id="progress-interval", n_intervals=0, interval=500),
     dbc.Progress(id="progress"),
     html.Hr(),
-    html.H2("File List"),
+    html.H3("Report"),
     html.Ul(id="file-list")
 ],style=content_style())
 
@@ -130,7 +128,7 @@ def update_output(uploaded_filenames, uploaded_file_contents):
 
     files = uploaded_files()
     if len(files) == 0:
-        return [html.Li("No files yet!")]
+        return [html.Li("no ASTEC archive present")]
     else:
         return [html.Li(file_download_link(filename)) for filename in files]
 
