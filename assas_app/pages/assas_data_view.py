@@ -307,7 +307,7 @@ def cell_clicked_download(active_cell, data):
         
         if col == 'system_download':
             logger.info('start download for %s' % row_data['system_path'])
-            return dcc.send_file(row_data['system_path']+'/result/dataset.h5')
+            return dcc.send_file(row_data['system_path']+'/dataset.h5')
         else:
             return dash.no_update
         
