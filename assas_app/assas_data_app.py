@@ -69,8 +69,9 @@ app.layout = html.Div(
                     dash.page_container
                 ])
 
-logger.info("started application")
+logger.info("loaded application")
 
 if __name__ == '__main__':
+    
     app.server.logger.addHandler(handler)
     app.run(debug=True)

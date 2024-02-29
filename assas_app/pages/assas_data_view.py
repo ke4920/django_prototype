@@ -307,7 +307,7 @@ def cell_clicked_download(active_cell, data):
         
         if col == 'system_download':
             logger.info('start download for %s' % row_data['system_path'])
-            return dcc.send_file(row_data['system_path']+'/dataset.h5')
+            return dcc.send_file(row_data['system_path']+'/result/dataset.h5')
         else:
             return dash.no_update
         
@@ -324,7 +324,6 @@ def cell_clicked_details(active_cell, data):
         col = active_cell['column_id']
         
         if col == 'meta_name':
-            logger.info(str(active_cell), row_data['_id'], row_data['system_index'])
             url = '/details/' + str(row_data['_id'])
             return url
         else:

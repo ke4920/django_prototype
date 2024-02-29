@@ -1,10 +1,8 @@
 {
 	"folders": [
 		{
+			"name": "django_prototype",
 			"path": "."
-		},
-		{
-			"path": "../Dash-User-Management-master"
 		}
 	],
 	"settings": {}
