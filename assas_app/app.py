@@ -1,20 +1,31 @@
+
 import dash
 import dash_bootstrap_components as dbc
 import logging
 
-from dash import dcc, html, Dash
-from flask import Flask
-from components import encode_svg_image
+from dash import Dash, html, dcc
+from flask import Flask, redirect
+from flask_login import LoginManager, UserMixin
 from logging.handlers import RotatingFileHandler
 
-logging.basicConfig(level=logging.INFO)
+from users_mgt import User as base
+from components import encode_svg_image
+
+logging.basicConfig(level=logging.DEBUG)
 logger = logging.getLogger('assas_app')
 handler = RotatingFileHandler('assas_app.log', maxBytes=10000, backupCount=10)
 logger.addHandler(handler)
 
+logger = logging.getLogger('assas_app')
+
 server = Flask(__name__)
 
-logger.info("start application")
+logger.info("start application %s" % __name__)
+
+@server.route('/')
+def index_redirect():
+    
+    return redirect('/home')
 
 app = Dash(__name__,
            server = server,
@@ -42,10 +53,10 @@ navbar = dbc.Navbar(
             ),
             dbc.Nav(
             [
-                dbc.NavItem(dbc.NavLink("Home", href="/", active="exact")),
-                dbc.NavItem(dbc.NavLink("Database", href="/assas_data_view", active="exact")),
-                dbc.NavItem(dbc.NavLink("Upload", href="/assas_data_upload", active="exact")),
-                dbc.NavItem(dbc.NavLink("About", href="/assas_data_about", active="exact")),
+                dbc.NavItem(dbc.NavLink("Home", href="/home", active="exact")),
+                dbc.NavItem(dbc.NavLink("Database", href="/database", active="exact")),
+                dbc.NavItem(dbc.NavLink("Upload", href="/upload", active="exact")),
+                dbc.NavItem(dbc.NavLink("About", href="/about", active="exact")),
             ],
             vertical=False,
             pills=True,
@@ -68,6 +79,20 @@ app.layout = html.Div(
                     dcc.Location(id="url"),
                     dash.page_container
                 ])
+
+# Setup the LoginManager for the server
+login_manager = LoginManager()
+login_manager.init_app(server)
+login_manager.login_view = '/login'
+
+# Create User class with UserMixin
+class User(UserMixin, base):
+    pass
+
+# callback to reload the user object
+@login_manager.user_loader
+def load_user(user_id):
+    return User.query.get(int(user_id))
 
 logger.info("loaded application")
 

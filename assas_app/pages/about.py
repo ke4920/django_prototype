@@ -3,7 +3,7 @@ import dash
 from dash import html
 from components import content_style, encode_svg_image
 
-dash.register_page(__name__, path='/assas_data_about')
+dash.register_page(__name__, path='/about')
 
 layout = html.Div([
     html.H1('About this Project'),

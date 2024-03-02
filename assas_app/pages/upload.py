@@ -6,23 +6,24 @@ import os
 import base64
 import logging
 
-from dash import Dash, dash_table, html, dcc, Input, Output, callback, State
+from dash import html, dcc, Input, Output, callback
 from urllib.parse import quote as urlquote
 from flask import Flask, send_from_directory
 from collections import OrderedDict
+
 from components import content_style
 from assasdb import AssasDatabaseManager
 
 logger = logging.getLogger(__name__)
+
+server = Flask(__name__)
 
 UPLOAD_DIRECTORY = "/home/jonas/upload"
 
 if not os.path.exists(UPLOAD_DIRECTORY):
     os.makedirs(UPLOAD_DIRECTORY)
 
-server = Flask(__name__)
-#app = Dash(server=server, external_stylesheets=[dbc.themes.BOOTSTRAP])
-dash.register_page(__name__, path="/assas_data_upload")
+dash.register_page(__name__, path="/upload")
 
 layout = html.Div([
     html.H2('ASSAS Database - Upload ASSAS Training Dataset'),
@@ -131,7 +132,6 @@ def update_output(uploaded_filenames, uploaded_file_contents):
         return [html.Li("no ASTEC archive present")]
     else:
         return [html.Li(file_download_link(filename)) for filename in files]
-
 
 def save_file(name, content):
     """Decode and store a file uploaded with Plotly Dash."""

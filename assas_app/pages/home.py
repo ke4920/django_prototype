@@ -3,7 +3,7 @@ import dash
 from dash import html
 from components import content_style, encode_svg_image
 
-dash.register_page(__name__, path='/')
+dash.register_page(__name__, path='/home')
 
 layout = html.Div([
     html.H1('ASSAS Database - ASSAS Data Hub'),

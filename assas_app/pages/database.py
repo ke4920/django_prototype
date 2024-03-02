@@ -2,11 +2,10 @@ import dash
 import dash_bootstrap_components as dbc
 import pandas as pd
 import numpy as np
-import h5py
-import os
 import logging
 
 from dash import Dash, dash_table, html, dcc, Input, Output, callback, State
+
 from assasdb import AssasDatabaseManager
 from components import content_style, conditional_table_style
 
@@ -42,7 +41,7 @@ PAGE_MAX_SIZE = 100
 
 PAGE_COUNT = ALL / PAGE_SIZE
 
-dash.register_page(__name__, path="/assas_data_view")
+dash.register_page(__name__, path="/database")
 
 layout = html.Div([
     html.H2('ASSAS Database - Training Dataset Index'),
@@ -63,6 +62,13 @@ layout = html.Div([
     dbc.Button(
             "Download", 
             id="download_selected", 
+            className="me-2", 
+            n_clicks=0, 
+            disabled=True,
+        ),
+    dbc.Button(
+            "Reload", 
+            id="reload_page", 
             className="me-2", 
             n_clicks=0, 
             disabled=True,
@@ -139,18 +145,10 @@ layout = html.Div([
         max=PAGE_MAX_SIZE,
         value=PAGE_SIZE,
         placeholder=PAGE_SIZE,
-        style={'color': 'grey'}
+        style={'color': 'grey'},
+        disabled=False,
     ),
-    html.Div('Select a page', id='pagination-contents'),             
-    #html.Div('Or set the page dynamically using the slider below'),
-    #dcc.Slider(
-    #    id='page-change',
-    #    min=1,
-    #    max=len(df) + 1,
-    #    step=1,
-    #    value=1,
-    #    marks={i: str(i) for i in range(1, 11)},
-    #),   
+    html.Div('Select a page', id='pagination-contents'),    
 ],style=content_style())
 
 @callback(
@@ -178,16 +176,19 @@ def style_selected_rows(selected_rows, selected_row_ids):
     if selected_rows is None:                                                                                                                                                                                                                      
         return dash.no_update
     
-    logger.info('%s %s ' % (selected_rows, selected_row_ids))
+    logger.debug('%s %s ' % (selected_rows, selected_row_ids))
     
     val = [
         {"if": {"filter_query": "{{id}} ={}".format(i)}, "backgroundColor": "green",}
         for i in selected_rows        
     ]   
+    
     val2 = conditional_table_style()
+    
     return val + val2
 
 def split_filter_part(filter_part):
+    
     for operator_type in operators:
         for operator in operator_type:
             if operator in filter_part:
@@ -217,8 +218,11 @@ def split_filter_part(filter_part):
     Input('datatable-paging-and-sorting', 'sort_by'),
     Input('datatable-paging-and-sorting', 'filter_query'))
 def update_table(page_current, page_size, sort_by, filter):
+    
     filtering_expressions = filter.split(' && ')
+    
     dff = df
+    
     for filter_part in filtering_expressions:
         col_name, operator, filter_value = split_filter_part(filter_part)
 
@@ -244,6 +248,7 @@ def update_table(page_current, page_size, sort_by, filter):
 
     page = page_current
     size = page_size
+    
     return dff.iloc[page * size: (page + 1) * size].to_dict('records')
 
 @callback(
@@ -252,7 +257,7 @@ def update_table(page_current, page_size, sort_by, filter):
     Input('datatable-page-size', 'value'))
 def update_page_size(use_page_size, page_size_value):
     
-    #logger.info("update page size", use_page_size, page_size_value, len(use_page_size))
+    logger.debug('update page size, use page size %s page size value %s' % (str(use_page_size), str(page_size_value)))
     
     if len(use_page_size) == 0 or page_size_value is None:
         return PAGE_SIZE
@@ -264,16 +269,26 @@ def update_page_size(use_page_size, page_size_value):
     Input('pagination', 'active_page'),
     Input('pagination', 'max_value'))
 def change_page(page, value):
+    
+    logger.debug('page %s value %s' % (str(page), str(value)))
+    
     if page:
+        
         return f'Page selected: {page}/{value}'
+    
     return f'Page selected: 1/{value}'
 
 @callback(
     Output('datatable-paging-and-sorting', 'page_current'),
     Input('pagination', 'active_page'))
 def change_page_table(page):
+    
+    logger.debug('page %s' % (str(page)))
+    
     if page:
-        return (page-1)
+        
+        return (page - 1)
+    
     return 0
 
 @callback(
@@ -283,13 +298,13 @@ def change_page_table(page):
     Input('datatable-page-size', 'value'))
 def update_page_count(use_page_size, page_size_value):
     
-    #logger.info("use page size", use_page_size, page_size_value, len(use_page_size))
+    logger.debug('update page count, use page size %s page size value %s' % (str(use_page_size), str(page_size_value)))
     
     if len(use_page_size) > 1 and page_size_value is not None:                
         return int(len(df) / page_size_value) + 1,{'color': 'black'}
     
     if page_size_value is None:
-        int(len(df) / PAGE_SIZE) + 1,{'color': 'grey'}      
+        return int(len(df) / PAGE_SIZE) + 1,{'color': 'grey'}      
     
     return int(len(df) / PAGE_SIZE) + 1,{'color': 'grey'}
 
@@ -306,9 +321,13 @@ def cell_clicked_download(active_cell, data):
         col = active_cell['column_id']
         
         if col == 'system_download':
+            
             logger.info('start download for %s' % row_data['system_path'])
+            
             return dcc.send_file(row_data['system_path']+'/dataset.h5')
+        
         else:
+            
             return dash.no_update
         
 @callback(
