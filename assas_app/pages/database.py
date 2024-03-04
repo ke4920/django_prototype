@@ -1,3 +1,4 @@
+import os
 import dash
 import dash_bootstrap_components as dbc
 import pandas as pd
@@ -5,6 +6,8 @@ import numpy as np
 import logging
 
 from dash import Dash, dash_table, html, dcc, Input, Output, callback, State
+from zipfile import ZipFile
+from uuid import uuid4
 
 from assasdb import AssasDatabaseManager
 from components import content_style, conditional_table_style
@@ -25,17 +28,9 @@ operators = [['ge ', '>='],
              ['contains '],
              ['datestartswith ']]
 
-def load_data():
-    
-    df = AssasDatabaseManager().view()    
-    df['system_index'] = range(1, len(df) + 1)    
-    df['_id'] = df['_id'].astype(str)    
-   
-    return df
-    
-df = load_data()
+table_data = AssasDatabaseManager().get_datasets()
 
-ALL = len(df)
+ALL = len(table_data)
 PAGE_SIZE = 30
 PAGE_MAX_SIZE = 100
 
@@ -74,6 +69,7 @@ layout = html.Div([
             disabled=True,
         ),
     ], style={'width': '100%','padding-left':'10%', 'padding-right':'25%'}),
+    dcc.Download(id='download_button'),
     html.Hr(),
     dash_table.DataTable(
         id='datatable-paging-and-sorting',
@@ -91,7 +87,7 @@ layout = html.Div([
         ],
         markdown_options={"html": True},
         hidden_columns=['', '_id', 'system_uuid', 'system_path'],
-        data=df.to_dict('records'),
+        data=table_data.to_dict('records'),
         style_cell={
             'fontSize': 17,
             'padding': '2px',
@@ -151,12 +147,59 @@ layout = html.Div([
     html.Div('Select a page', id='pagination-contents'),    
 ],style=content_style())
 
+def generate_archive(path_to_zip, file_path_list):
+    
+    with ZipFile(path_to_zip, 'w') as zip_object:
+        
+        for file_path in file_path_list:
+            zip_object.write(file_path)
+            
+    if os.path.exists(path_to_zip):
+        logger.info("ZIP file %s created" % path_to_zip)
+        return path_to_zip
+    else:
+        logger.info("ZIP file %s not created" % path_to_zip)
+        return None       
+
+@callback(
+    Output('download_button', 'data'),
+    Input('download_selected', 'n_clicks'),  
+    State("datatable-paging-and-sorting", "derived_viewport_selected_rows"),
+    State("datatable-paging-and-sorting", "derived_viewport_selected_row_ids"),
+    State('datatable-paging-and-sorting', 'derived_viewport_data')
+)
+def start_download(clicks, rows, ids, data):
+    
+    if (rows is None) or (ids is None) or len(rows) == 0:                                                                                                                                                                                                                      
+        return dash.no_update    
+    
+    uuid = str(uuid4())
+    logger.info('started download (id = %s)' % uuid)
+    
+    download_folder = os.getcwd() + '/tmp'
+    if not os.path.exists(download_folder):
+        logger.info("create %s" % download_folder)
+        os.makedirs(download_folder)
+        
+    selected_data = [data[i] for i in rows]    
+    file_list = [data_item['system_path']+'/dataset.h5' for data_item in selected_data]
+    
+    zip_file = download_folder + '/download_' + uuid + '.zip'
+    logger.info('generate archive %s' % zip_file)
+    
+    zip_file = generate_archive(zip_file, file_list)
+    
+    logger.debug('clicks %s rows %s files %s zip %s' % (str(clicks), str(rows), file_list, zip_file))   
+        
+    return dcc.send_file(zip_file)
+
 @callback(
     Output("download_selected", "disabled"),     
     Input("datatable-paging-and-sorting", "derived_viewport_selected_rows"),
-    Input("datatable-paging-and-sorting", "derived_viewport_selected_row_ids")
+    Input("datatable-paging-and-sorting", "derived_viewport_selected_row_ids"),
+    State('datatable-paging-and-sorting', 'derived_viewport_data')
 )
-def selected_button(rows, ids):
+def selected_button(rows, ids, data):
     
     if (rows is None) or (ids is None):                                                                                                                                                                                                                      
         return dash.no_update
@@ -165,27 +208,6 @@ def selected_button(rows, ids):
         return False
     
     return True
-
-@callback(
-    Output("datatable-paging-and-sorting", "style_data_conditional"),
-    Input("datatable-paging-and-sorting", "derived_viewport_selected_rows"),
-    Input("datatable-paging-and-sorting", "derived_viewport_selected_row_ids"),
-)
-def style_selected_rows(selected_rows, selected_row_ids):
-    
-    if selected_rows is None:                                                                                                                                                                                                                      
-        return dash.no_update
-    
-    logger.debug('%s %s ' % (selected_rows, selected_row_ids))
-    
-    val = [
-        {"if": {"filter_query": "{{id}} ={}".format(i)}, "backgroundColor": "green",}
-        for i in selected_rows        
-    ]   
-    
-    val2 = conditional_table_style()
-    
-    return val + val2
 
 def split_filter_part(filter_part):
     
@@ -221,7 +243,7 @@ def update_table(page_current, page_size, sort_by, filter):
     
     filtering_expressions = filter.split(' && ')
     
-    dff = df
+    dff = table_data
     
     for filter_part in filtering_expressions:
         col_name, operator, filter_value = split_filter_part(filter_part)
@@ -301,12 +323,12 @@ def update_page_count(use_page_size, page_size_value):
     logger.debug('update page count, use page size %s page size value %s' % (str(use_page_size), str(page_size_value)))
     
     if len(use_page_size) > 1 and page_size_value is not None:                
-        return int(len(df) / page_size_value) + 1,{'color': 'black'}
+        return int(len(table_data) / page_size_value) + 1,{'color': 'black'}
     
     if page_size_value is None:
-        return int(len(df) / PAGE_SIZE) + 1,{'color': 'grey'}      
+        return int(len(table_data) / PAGE_SIZE) + 1,{'color': 'grey'}      
     
-    return int(len(df) / PAGE_SIZE) + 1,{'color': 'grey'}
+    return int(len(table_data) / PAGE_SIZE) + 1,{'color': 'grey'}
 
 @callback(
     Output('download', 'data'),
