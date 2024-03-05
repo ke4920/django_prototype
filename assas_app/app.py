@@ -99,4 +99,4 @@ logger.info("loaded application")
 if __name__ == '__main__':
     
     app.server.logger.addHandler(handler)
-    app.run(debug=True)
+    app.run(debug=True, host='0.0.0.0', port='8051')
